@@ -1,6 +1,7 @@
-
+# -*- coding: utf-8 -*-
+"""
 存储行业物料风险监控 & 周期预测系统 v4
-════════════════════════════════════════════════
+============================================
 核心功能：
   1. 存储价格周期预测（DRAM/NAND/HBM 全品类）
   2. 结构性超级上行周期分析（AI 驱动的非常规周期）
@@ -13,7 +14,7 @@
 import os, sys
 os.environ["STREAMLIT_LOG_LEVEL"] = "error"
 
-# ── 修复 Arrow 序列化问题：混合类型列（如包含 NaN 的字符串列）会导致 st.dataframe() 崩溃 ──
+# -- 修复 Arrow 序列化问题：混合类型列（如包含 NaN 的字符串列）会导致 st.dataframe() 崩溃 --
 # 补丁：在列转换为 Arrow 前，将 object 列统一转为字符串
 import streamlit.dataframe_util as _sdu
 _orig_arrow_convert = _sdu.convert_pandas_df_to_arrow_bytes
@@ -28,7 +29,7 @@ def _safe_arrow_convert(df):
     return _orig_arrow_convert(df)
 _sdu.convert_pandas_df_to_arrow_bytes = _safe_arrow_convert
 
-# ── 静默 Streamlit bare-mode 警告 ──
+# -- 静默 Streamlit bare-mode 警告 --
 # 这些警告在模块初始化阶段输出，绕过 Python logging propagation 直接写 stderr
 class _StderrFilter:
     _BARE_MODE_MSGS = (
@@ -67,9 +68,9 @@ try:
 except ImportError:
     KINGDEE_AVAILABLE = False
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 页面配置
-# ══════════════════════════════════════════════════════════
+# ======================================================
 st.set_page_config(
     page_title="存储物料风险监控 & 周期预测 v4",
     page_icon="🛡️",
@@ -77,7 +78,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── 全局样式 ──
+# -- 全局样式 --
 st.markdown("""
 <style>
 .main-header { font-size:1.8rem; font-weight:700; color:#1A478A; margin-bottom:0; }
@@ -95,11 +96,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 数据层
-# ══════════════════════════════════════════════════════════
+# ======================================================
 
-# ── 品牌风险库 ──
+# -- 品牌风险库 --
 BRAND_RISK_DB = {
     "Samsung":    {"score":72, "level":"高风险", "country":"韩国",
                    "factors":"HBM挤压DRAM产能;平泽工厂地理集中;NAND减产波动",
@@ -184,9 +185,9 @@ TYPE_RISK_MODIFIER = {
                    "price_trend":"下跌", "obsolescence_risk":"低",   "alt_count":"很多"},
 }
 
-# ══════════════════════════════════════════════════════════
-# ★ 存储周期与价格预测引擎
-# ══════════════════════════════════════════════════════════
+# ======================================================
+# * 存储周期与价格预测引擎
+# ======================================================
 
 # 历史周期数据（2013-2026）
 CYCLE_DATA = {
@@ -360,9 +361,9 @@ def score_material(mpn, brand, mat_type, qty_per_unit=1):
     }
 
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 物料未来价格预测引擎
-# ══════════════════════════════════════════════════════════
+# ======================================================
 
 @st.cache_data
 def build_material_future_prices():
@@ -411,9 +412,9 @@ def build_material_future_prices():
     return pd.DataFrame(data)
 
 
-# ══════════════════════════════════════════════════════════
-# ★ MPN 级价格预测引擎（每个料号独立价格曲线）
-# ══════════════════════════════════════════════════════════
+# ======================================================
+# * MPN 级价格预测引擎（每个料号独立价格曲线）
+# ======================================================
 
 @st.cache_data
 def build_mpn_price_predictions(storage_df):
@@ -527,9 +528,9 @@ def build_mpn_price_predictions(storage_df):
     return pd.DataFrame(data), mpn_meta
 
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # BOM 数据加载
-# ══════════════════════════════════════════════════════════
+# ======================================================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BOM_PATH = os.path.join(SCRIPT_DIR, "BOM列表_2026061210160661_100098.xlsx")
 STORAGE_PATH = os.path.join(SCRIPT_DIR, "存储.xlsx")
@@ -633,9 +634,9 @@ def build_product_material_association(bom_products, storage_materials):
     return pd.DataFrame(records)
 
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 加载数据
-# ══════════════════════════════════════════════════════════
+# ======================================================
 df_storage = load_storage_materials()
 df_products = load_bom_products()
 df_bom = build_product_material_association(df_products, df_storage)
@@ -668,9 +669,9 @@ df_bom["品牌趋势"] = [r["brand_trend"] for r in risk_results]
 df_bom["品牌因素"] = [r["brand_factors"] for r in risk_results]
 df_bom["产地"] = [r["country"] for r in risk_results]
 
-# ══════════════════════════════════════════════════════════
-# ★ 价格追踪 & 库存预警引擎
-# ══════════════════════════════════════════════════════════
+# ======================================================
+# * 价格追踪 & 库存预警引擎
+# ======================================================
 
 @st.cache_data
 def build_mpn_price_tracking(df_mpn_price):
@@ -863,9 +864,9 @@ def generate_alerts(df_bom, df_mpn_price, df_inventory=None):
 # 构建追踪数据
 df_price_tracking = build_mpn_price_tracking(df_mpn_price)
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 金蝶云星空库存数据（可选集成）
-# ══════════════════════════════════════════════════════════
+# ======================================================
 df_inventory = None
 kingdee_connected = False
 kingdee_status_msg = "未连接"
@@ -890,13 +891,13 @@ if KINGDEE_AVAILABLE:
 else:
     kingdee_status_msg = "未安装 requests 库"
 
-# ── 生成告警（基于最新数据）──
+# -- 生成告警（基于最新数据）--
 df_alerts = generate_alerts(df_bom, df_mpn_price, df_inventory)
 
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 侧边栏
-# ══════════════════════════════════════════════════════════
+# ======================================================
 with st.sidebar:
     st.markdown("## 📂 数据源状态")
     st.success(f"✅ 金蝶BOM：{df_products['成品名称'].nunique()} 款产品")
@@ -955,7 +956,7 @@ with st.sidebar:
     st.caption("金蝶BOM + 存储物料库 双数据源")
 
 
-# ── 库存数据来源 ──
+# -- 库存数据来源 --
 if kingdee_connected and df_inventory is not None and len(df_inventory) > 0:
     inv_label = f"ERP在线 | {len(df_inventory)}条记录"
     inv_weeks = "ERP实时"
@@ -967,15 +968,15 @@ else:
     inv_kpi_text = inv_weeks
     inv_kpi_sub = "正常:10-12周"
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 主界面 Header
-# ══════════════════════════════════════════════════════════
+# ======================================================
 st.markdown('<p class="main-header">🛡️ 存储物料风险监控 & 周期预测系统 v4</p>', unsafe_allow_html=True)
 st.caption(f"更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M')} | 当前周期阶段：结构性 AI 超级上行 | 库存水位：{inv_label}")
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 顶部 KPI
-# ══════════════════════════════════════════════════════════
+# ======================================================
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 
 high_mat = len(df_bom[df_bom["风险等级"]=="高风险"])
@@ -996,9 +997,9 @@ with c6:
     kpi_color = "#1D9E75" if kingdee_connected else "#E97C00"
     st.markdown(f'<div class="metric-box" style="background:linear-gradient(135deg,{kpi_color},#F0A030)"><h3>📉 库存水位</h3><h1>{inv_kpi_text}</h1><p>{inv_kpi_sub}</p></div>', unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # Tab 结构
-# ══════════════════════════════════════════════════════════
+# ======================================================
 tab_cycle, tab_price, tab_bom_view, tab_product, tab_track, tab_mat, tab_alert, tab_advice, tab_news = st.tabs([
     "🔄 周期分析",       # 存储周期全景
     "📈 价格预测",       # 实时+未来价格
@@ -1011,9 +1012,9 @@ tab_cycle, tab_price, tab_bom_view, tab_product, tab_track, tab_mat, tab_alert, 
     "📰 行业动态",       # 存储行业每日新闻
 ])
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 1: 周期分析 — 全球存储行业周期全景                ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_cycle:
     st.subheader("🔄 全球存储行业周期全景（2018-2028）")
 
@@ -1100,9 +1101,9 @@ with tab_cycle:
         st.plotly_chart(fig2, width='stretch')
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 2: 价格预测 — 实时+未来价格曲线                   ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_price:
     st.subheader("📈 存储产品价格预测（2024-2028）")
     st.caption("实线=历史 | 虚线=预测 | 灰线=当前时间 | 数据源：TrendForce/DRAMeXchange 公开数据")
@@ -1168,7 +1169,7 @@ with tab_price:
               <span style="color:#888;font-size:0.65rem;">{reason}</span>
             </div>""", unsafe_allow_html=True)
 
-    # ── MPN 级价格查询 ──
+    # -- MPN 级价格查询 --
     st.divider()
     st.subheader("🔍 料号级价格预测查询")
     st.caption(f"基于存储物料库 {len(df_mpn_price.columns)-1} 颗唯一 MPN 的独立价格预测模型")
@@ -1277,14 +1278,14 @@ with tab_price:
         st.caption("💡 在上方搜索框输入料号或关键字，即可查看具体 MPN 的价格走势图")
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 3: BOM 物料追踪                                    ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_bom_view:
     st.subheader("🏗️ BOM 物料追踪 — 产品搜索 + 存储物料价格查询")
     st.caption(f"数据源：金蝶 BOM（{df_products['成品名称'].nunique()}款产品） × 存储物料库（{df_storage['物料料号(MPN)'].nunique()}颗料号）")
 
-    # ── 产品搜索 ──
+    # -- 产品搜索 --
     col_s1, col_s2 = st.columns([3, 1])
     with col_s1:
         search_prod = st.text_input(
@@ -1489,14 +1490,14 @@ with tab_bom_view:
         st.caption(f"共 {df_storage['物料料号(MPN)'].nunique()} 颗存储物料 | 输入产品名开始查询")
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 4: 产品分析 — 单产品搜索 + 风险 + 价格 + 建议     ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_product:
     st.subheader("🔍 产品分析 — 搜索查看单个产品的风险、价格与采购建议")
     st.caption(f"数据源：金蝶 BOM 列表（{df_products['成品名称'].nunique()}款产品） × 存储物料库")
 
-    # ── 产品搜索 ──
+    # -- 产品搜索 --
     all_products = sorted(df_bom["成品名称"].unique())
     col_search, col_info = st.columns([2, 1])
 
@@ -1531,11 +1532,11 @@ with tab_product:
             st.info(f"✅ 选中产品：**{selected_product}**")
 
         if selected_product:
-            # ── 获取产品数据 ──
+            # -- 获取产品数据 --
             prod_mats = df_bom[df_bom["成品名称"] == selected_product].sort_values("风险评分", ascending=False)
             prod_info = df_products[df_products["成品名称"] == selected_product]
 
-            # ── 产品概览卡片 ──
+            # -- 产品概览卡片 --
             st.divider()
             st.markdown("### 📦 产品概览")
 
@@ -1601,7 +1602,7 @@ with tab_product:
                 spec = str(pi.get("规格描述", "-"))[:100] if "规格描述" in prod_info.columns else "-"
                 st.caption(f"📝 规格：{spec} | 📐 BOM版本：{bom_ver} | 👤 创建人：{creator}")
 
-            # ── 关联物料价格预测图 ──
+            # -- 关联物料价格预测图 --
             st.divider()
             st.markdown("### 📈 该产品关联物料的价格走势")
 
@@ -1645,7 +1646,7 @@ with tab_product:
             else:
                 st.info("该产品的物料暂无对应的 MPN 级价格预测数据")
 
-            # ── 关联物料风险明细 ──
+            # -- 关联物料风险明细 --
             st.divider()
             st.markdown("### 📋 关联存储物料风险明细")
 
@@ -1671,7 +1672,7 @@ with tab_product:
                 }
             )
 
-            # ── 产品专属采购建议 ──
+            # -- 产品专属采购建议 --
             st.divider()
             st.markdown("### 💡 该产品采购建议")
 
@@ -1784,14 +1785,14 @@ with tab_product:
                 """, unsafe_allow_html=True)
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 5: 追踪预警 — 价格追踪 + 库存预警 + 自动提醒     ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_track:
     st.subheader("📡 每颗物料价格追踪 & 库存预警")
     st.caption(f"自动监控 {len(df_price_tracking)} 颗料号 | 当前告警：{len(df_alerts)} 条")
 
-    # ── 告警汇总 ──
+    # -- 告警汇总 --
     if len(df_alerts) > 0:
         df_alerts_df = pd.DataFrame(df_alerts)
         urgent_count = len(df_alerts_df[df_alerts_df["级别"] == "🔴 紧急"])
@@ -1832,7 +1833,7 @@ with tab_track:
             </div>
             """, unsafe_allow_html=True)
 
-        # ── 告警列表 ──
+        # -- 告警列表 --
         st.divider()
         st.subheader(f"🚨 当前告警列表（{len(df_alerts)} 条）")
 
@@ -1885,7 +1886,7 @@ with tab_track:
     else:
         st.success("✅ 当前无告警，所有物料状态正常")
 
-    # ── 价格追踪表 ──
+    # -- 价格追踪表 --
     st.divider()
     st.subheader("📊 每颗物料价格追踪表")
 
@@ -1944,7 +1945,7 @@ with tab_track:
         }
     )
 
-    # ── 预警规则配置 ──
+    # -- 预警规则配置 --
     st.divider()
     st.subheader("⚙️ 预警规则配置")
 
@@ -1989,9 +1990,9 @@ with tab_track:
     st.caption("💡 告警每 5 分钟自动刷新 | 连接金蝶 ERP 后库存预警自动启用 | 可在 kingdee_api.py 调整阈值")
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 6: 物料风险总表                                    ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_mat:
     st.subheader("📋 物料风险总表 — 逐颗料号详细风险数据")
 
@@ -2055,9 +2056,9 @@ with tab_mat:
         st.plotly_chart(fig, width='stretch')
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 7: 风险告警 — 三大关键风险信号                     ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_alert:
     st.subheader("🚨 风险告警 — 三大关键信号")
 
@@ -2193,9 +2194,9 @@ with tab_alert:
         st.success("✅ 当前无高风险物料")
 
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 8: 采购建议                                        ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_advice:
     st.subheader("💡 采购策略建议")
 
@@ -2294,14 +2295,14 @@ with tab_advice:
     else:
         st.success("✅ 当前 BOM 中未检测到面临 EOL 风险的 DDR4/LPDDR4 物料")
 
-# ╔══════════════════════════════════════════════════════════╗
+# ============================================================
 # ║ Tab 9: 行业动态 — 存储行业每日新闻                     ║
-# ╚══════════════════════════════════════════════════════════╝
+# ============================================================
 with tab_news:
     st.subheader("📰 存储行业每日动态")
     st.caption("数据源：TrendForce / DRAMeXchange / DIGITIMES / SemiAnalysis / 各厂商 IR | 每日更新")
 
-    # ── 新闻数据 ──
+    # -- 新闻数据 --
     @st.cache_data(ttl=86400)  # 缓存24小时
     def get_industry_news():
         """获取存储行业最新新闻（缓存24小时）"""
@@ -2421,7 +2422,7 @@ with tab_news:
 
     news_data = get_industry_news()
 
-    # ── 筛选栏 ──
+    # -- 筛选栏 --
     col_filter1, col_filter2, col_filter3 = st.columns(3)
     with col_filter1:
         news_categories = ["全部"] + sorted(set(n["category"] for n in news_data))
@@ -2444,7 +2445,7 @@ with tab_news:
 
     st.caption(f"显示 {len(filtered_news)} / {len(news_data)} 条新闻")
 
-    # ── 新闻卡片 ──
+    # -- 新闻卡片 --
     impact_colors = {
         "🔴 涨价": "#FCE4EC", "🔴 暴涨": "#FCE4EC", "🔴 风险": "#FCE4EC",
         "🔴 EOL": "#FCE4EC", "🔴 需求激增": "#FCE4EC",
@@ -2481,18 +2482,18 @@ with tab_news:
         </div>
         """, unsafe_allow_html=True)
 
-    # ── 底部 ──
+    # -- 底部 --
     st.divider()
     st.caption("💡 新闻每24小时自动刷新 | 点击来源链接查看原文 | 如需添加更多新闻源请联系管理员")
 
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 st.divider()
 st.caption("⚠️ 免责声明：本系统基于全球公开数据源预测，仅供内部参考，不构成采购/投资建议。")
 
-# ══════════════════════════════════════════════════════════
+# ======================================================
 # 直接运行入口：python dashboard_v4.py 或双击 .py 文件
-# ══════════════════════════════════════════════════════════
+# ======================================================
 if __name__ == "__main__":
     import subprocess, sys
     script = __file__
